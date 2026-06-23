@@ -5,7 +5,7 @@ import threading
 import time
 import requests
 
-TOKEN = "Y8422214558:AAFDJ8_6NzYIh3xKoplMLHd5gXijW1Rvk2Q"
+TOKEN = "8422214558:AAFDJ8_6NzYIh3xKoplMLHd5gXijW1Rvk2Q"
 bot = telebot.TeleBot(TOKEN)
 
 # ---------------- DATABASE ----------------

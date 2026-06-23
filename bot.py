@@ -1,49 +1,87 @@
-@bot.message_handler(func=lambda message: message.text in [
-    "12.07", "13.07", "14.07", "15.07",
-    "17:00", "20:25", "22:30"
-])
-def save_choice(message):
+import telebot
+from telebot import types
+
+TOKEN = "8422214558:AAFDJ8_6NzYIh3xKoplMLHd5gXijW1Rvk2Q"
+bot = telebot.TeleBot(TOKEN)
+
+user_data = {}
+
+# /start
+@bot.message_handler(commands=['start'])
+def start(message):
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.row("12.07", "13.07")
+    keyboard.row("14.07", "15.07")
+
+    bot.send_message(
+        message.chat.id,
+        "Привіт! Обери дату:",
+        reply_markup=keyboard
+    )
+
+
+# універсальний хендлер
+@bot.message_handler(func=lambda message: True)
+def handler(message):
     chat_id = message.chat.id
+    text = message.text
 
     if chat_id not in user_data:
         user_data[chat_id] = {}
 
-    # якщо це дата
-    if message.text in ["12.07", "13.07", "14.07", "15.07"]:
-        user_data[chat_id]["date"] = message.text
+    # ---------------- DATE ----------------
+    if text in ["12.07", "13.07", "14.07", "15.07"]:
+        user_data[chat_id]["date"] = text
 
         keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.row("17:00", "20:25")
         keyboard.row("22:30")
-        keyboard.row("⬅️ Назад")
 
         bot.send_message(
             chat_id,
-            "Ок, дату збережено. Обери час:",
+            f"Дата обрана: {text}\nТепер обери час:",
             reply_markup=keyboard
         )
+        return
 
-    # якщо це час
-    else:
-        user_data[chat_id]["time"] = message.text
+    # ---------------- TIME ----------------
+    if text in ["17:00", "20:25", "22:30"]:
+        user_data[chat_id]["time"] = text
+
+        date = user_data[chat_id].get("date")
+
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.row("Підтвердити", "Скасувати")
 
         bot.send_message(
             chat_id,
-            f"Готово ✅\nДата: {user_data[chat_id].get('date')}\nЧас: {message.text}"
-        )
-            f"Дата збережена: {message.text}\nТепер обери час:",
+            f"Перевір:\nДата: {date}\nЧас: {text}",
             reply_markup=keyboard
         )
+        return
 
-    else:
-        if message.chat.id not in user_data:
-            user_data[message.chat.id] = {}
-
-        user_data[message.chat.id]["time"] = message.text
-
-        date = user_data[message.chat.id].get("date", "не вибрана")
+    # ---------------- CONFIRM ----------------
+    if text == "Підтвердити":
+        data = user_data.get(chat_id, {})
 
         bot.send_message(
-            message.chat.id,
-            f"✅ Готово!\nДата: {date}\nЧас: {message.text}"
+            chat_id,
+            f"✅ Заброньовано!\nДата: {data.get('date')}\nЧас: {data.get('time')}",
+            reply_markup=types.ReplyKeyboardRemove()
         )
+        return
+
+    # ---------------- CANCEL ----------------
+    if text == "Скасувати":
+        user_data.pop(chat_id, None)
+
+        bot.send_message(
+            chat_id,
+            "❌ Скасовано. Натисни /start щоб почати знову.",
+            reply_markup=types.ReplyKeyboardRemove()
+        )
+        return
+
+
+print("Bot started...")
+bot.infinity_polling()

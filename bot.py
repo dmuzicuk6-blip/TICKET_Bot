@@ -25,4 +25,5 @@ def handle(message):
         bot.send_message(message.chat.id, f"Ти вибрала: {message.text}")
 
 print("Bot started")
-bot.infinity_polling()8:AAFDJ8_6NzYIh3xKoplMLHd5gXijW1Rvk2Q
+print("Bot started")
+bot.infinity_polling()

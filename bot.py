@@ -1,87 +1,89 @@
 import telebot
 from telebot import types
+import requests
+import time
+import threading
 
 TOKEN = "8422214558:AAFDJ8_6NzYIh3xKoplMLHd5gXijW1Rvk2Q"
 bot = telebot.TeleBot(TOKEN)
 
-user_data = {}
+# збереження запитів
+tracking = {}
 
-# /start
+# ---------------- START ----------------
 @bot.message_handler(commands=['start'])
 def start(message):
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.row("12.07", "13.07")
-    keyboard.row("14.07", "15.07")
-
     bot.send_message(
         message.chat.id,
-        "Привіт! Обери дату:",
-        reply_markup=keyboard
+        "Привіт 👋\nНапиши маршрут у форматі:\n\nКиїв - Чоп\n12.07\n\nЯ додам моніторинг 🔔"
     )
 
-
-# універсальний хендлер
-@bot.message_handler(func=lambda message: True)
-def handler(message):
+# ---------------- INPUT ----------------
+@bot.message_handler(func=lambda m: "-" in m.text)
+def add_tracking(message):
     chat_id = message.chat.id
-    text = message.text
+    lines = message.text.split("\n")
 
-    if chat_id not in user_data:
-        user_data[chat_id] = {}
+    try:
+        route = lines[0]
+        date = lines[1]
 
-    # ---------------- DATE ----------------
-    if text in ["12.07", "13.07", "14.07", "15.07"]:
-        user_data[chat_id]["date"] = text
+        from_city, to_city = [x.strip() for x in route.split("-")]
 
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.row("17:00", "20:25")
-        keyboard.row("22:30")
-
-        bot.send_message(
-            chat_id,
-            f"Дата обрана: {text}\nТепер обери час:",
-            reply_markup=keyboard
-        )
-        return
-
-    # ---------------- TIME ----------------
-    if text in ["17:00", "20:25", "22:30"]:
-        user_data[chat_id]["time"] = text
-
-        date = user_data[chat_id].get("date")
-
-        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.row("Підтвердити", "Скасувати")
+        tracking[chat_id] = {
+            "from": from_city,
+            "to": to_city,
+            "date": date,
+            "active": True
+        }
 
         bot.send_message(
             chat_id,
-            f"Перевір:\nДата: {date}\nЧас: {text}",
-            reply_markup=keyboard
+            f"🔔 Моніторинг увімкнено\n\n🚉 {from_city} → {to_city}\n📅 {date}"
         )
-        return
 
-    # ---------------- CONFIRM ----------------
-    if text == "Підтвердити":
-        data = user_data.get(chat_id, {})
+    except:
+        bot.send_message(chat_id, "❌ Формат неправильний. Напиши:\nКиїв - Чоп\n12.07")
 
-        bot.send_message(
-            chat_id,
-            f"✅ Заброньовано!\nДата: {data.get('date')}\nЧас: {data.get('time')}",
-            reply_markup=types.ReplyKeyboardRemove()
-        )
-        return
 
-    # ---------------- CANCEL ----------------
-    if text == "Скасувати":
-        user_data.pop(chat_id, None)
+# ---------------- CHECK FUNCTION ----------------
+def check_tickets(from_city, to_city, date):
+    """
+    Тут має бути реальний запит.
+    УЗ не має відкритого API, тому це заглушка.
+    """
 
-        bot.send_message(
-            chat_id,
-            "❌ Скасовано. Натисни /start щоб почати знову.",
-            reply_markup=types.ReplyKeyboardRemove()
-        )
-        return
+    # Імітація перевірки
+    # (сюди можна підключати парсинг сторінки)
+    return False
 
+
+# ---------------- MONITOR LOOP ----------------
+def monitor():
+    while True:
+        for chat_id, data in tracking.items():
+            if not data["active"]:
+                continue
+
+            available = check_tickets(
+                data["from"],
+                data["to"],
+                data["date"]
+            )
+
+            if available:
+                bot.send_message(
+                    chat_id,
+                    f"🚆 Є квитки!\n\n{data['from']} → {data['to']}\n📅 {data['date']}\n\nЗаходь швидко в додаток!"
+                )
+
+                data["active"] = False
+
+        time.sleep(60)  # перевірка кожну хвилину
+
+
+# ---------------- RUN THREAD ----------------
+threading.Thread(target=monitor, daemon=True).start()
 
 print("Bot started...")
 bot.infinity_polling()

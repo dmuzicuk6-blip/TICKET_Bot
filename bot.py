@@ -4,9 +4,10 @@ import os
 
 TOKEN = os.getenv("8422214558:AAFDJ8_6NzYIh3xKoplMLHd5gXijW1Rvk2Q")
 
-# перевірка токена (щоб не падало)
+# якщо токена нема — просто не падаємо, а пишемо в лог
 if not TOKEN:
-    raise Exception("BOT_TOKEN not found in environment variables")
+    print("WARNING: BOT_TOKEN is missing")
+    TOKEN = "TEST"
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -20,16 +21,16 @@ def start(message):
     markup.add("📅 Дата", "⏰ Час")
     markup.add("✍️ Ввести вручну")
 
-    bot.send_message(message.chat.id, "Вибери дію:", reply_markup=markup)
+    bot.send_message(message.chat.id, "Привіт! Обери дію:", reply_markup=markup)
 
 
 # дата
 @bot.message_handler(func=lambda m: m.text == "📅 Дата")
 def date(message):
-    bot.send_message(message.chat.id, "📅 Доступні варіанти: сьогодні / будь-яка дата")
+    bot.send_message(message.chat.id, "Доступно: сьогодні / будь-яка дата")
 
 
-# меню часу
+# час меню
 @bot.message_handler(func=lambda m: m.text == "⏰ Час")
 def time_menu(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -44,7 +45,7 @@ def time_menu(message):
 @bot.message_handler(func=lambda m: m.text in ["17:00", "20:25", "22:30"])
 def choose_time(message):
     user_data[message.chat.id] = message.text
-    bot.send_message(message.chat.id, f"✔️ Обрано: {message.text}")
+    bot.send_message(message.chat.id, f"Вибрано: {message.text}")
 
 
 # ручний ввід
@@ -56,7 +57,7 @@ def manual(message):
 
 def save_manual(message):
     user_data[message.chat.id] = message.text
-    bot.send_message(message.chat.id, f"✔️ Збережено: {message.text}")
+    bot.send_message(message.chat.id, f"Збережено: {message.text}")
 
 
 # назад
@@ -65,7 +66,7 @@ def back(message):
     start(message)
 
 
-# захист від крашу
+# будь-який текст
 @bot.message_handler(func=lambda m: True)
 def fallback(message):
     bot.send_message(message.chat.id, "Натисни /start")
